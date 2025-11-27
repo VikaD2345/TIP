@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Список фильмов</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; margin:0; background:var(--bg); color:#111}
+    .container{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    header h1{margin:0;font-size:1.4rem}
+    .controls{display:flex;gap:12px;align-items:center;margin:18px 0}
+    .controls input{flex:1;padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef}
+    .controls label{display:flex;gap:8px;align-items:center;color:var(--muted)}
+    .movie-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(16,24,40,0.06);display:flex;flex-direction:column}
+    .poster{width:100%;height:320px;object-fit:cover;background:#ddd}
+    .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
+    .title{margin:0;font-size:1.05rem}
+    .meta{color:var(--muted);font-size:0.9rem}
+    .fav-btn{margin-top:auto;padding:8px 10px;border-radius:8px;border:1px solid #e6e9ef;background:transparent;cursor:pointer}
+    .fav-btn.fav{background:linear-gradient(90deg,var(--accent),#1e40af);color:white;border-color:transparent}
+    .empty{padding:40px;text-align:center;color:var(--muted)}
+    footer{margin-top:20px;text-align:center;color:var(--muted);font-size:0.9rem}
+    @media (max-width:520px){.poster{height:260px}.controls{flex-direction:column;align-items:stretch}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Список фильмов</h1>
+      <div style="color:var(--muted)">— красивый статический макет</div>
+    </header>
+
+    <section class="controls" aria-label="controls">
+      <input id="search" placeholder="Поиск по названию..." />
+      <label><input id="onlyFav" type="checkbox" /> Показать только любимые</label>
+      <div id="count" style="margin-left:auto;color:var(--muted)"></div>
+    </section>
+
+    <main class="movie-grid" id="grid"></main>
+
+    <div id="empty" class="empty" style="display:none">Ничего не найдено.</div>
+
+    <footer>Пример учебного проекта — избранное в localStorage.</footer>
+  </div>
+
+  <script>
+    // Набор фильмов (можешь заменить URL постеров на свои)
+    const movies = [
+      {
+        id: 'm1',
+        title: 'Побег в закат',
+        year: 2018,
+        runtime: 102,
+        poster: 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=800&q=60&auto=format&fit=crop&ixlib=rb-4.0.3&s=1'
+      },
+      {
+        id: 'm2',
+        title: 'Город теней',
+        year: 2020,
+        runtime: 121,
+        poster: 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=800&q=60&auto=format&fit=crop&ixlib=rb-4.0.3&s=2'
+      },
+      {
+        id: 'm3',
+        title: 'Комета',
+        year: 2015,
+        runtime: 95,
+        poster: 'https://images.unsplash.com/photo-1505685296765-3a2736de412f?w=800&q=60&auto=format&fit=crop&ixlib=rb-4.0.3&s=3'
+      },
+      {
+        id: 'm4',
+        title: 'Ночные истории',
+        year: 2022,
+        runtime: 110,
+        poster: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=800&q=60&auto=format&fit=crop&ixlib=rb-4.0.3&s=4'
+      }
+    ]
+
+    const STORAGE_KEY = 'simple-movie-favs'
+
+    const grid = document.getElementById('grid')
+    const searchInput = document.getElementById('search')
+    const onlyFavCheckbox = document.getElementById('onlyFav')
+    const countEl = document.getElementById('count')
+    const emptyEl = document.getElementById('empty')
+
+    let favorites = {}
+    try {
+      favorites = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}
+    } catch(e){ favorites = {} }
+
+    function saveFavs(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites)) }
+
+    function render() {
+      const q = searchInput.value.trim().toLowerCase()
+      const onlyFav = onlyFavCheckbox.checked
+
+      const filtered = movies.filter(m => {
+        if (onlyFav && !favorites[m.id]) return false
+        if (!q) return true
+        return m.title.toLowerCase().includes(q)
+      })
+
+      grid.innerHTML = ''
+      if (filtered.length === 0) {
+        emptyEl.style.display = 'block'
+      } else {
+        emptyEl.style.display = 'none'
+      }
+
+      filtered.forEach(m => {
+        const card = document.createElement('article')
+        card.className = 'card'
+
+        const img = document.createElement('img')
+        img.className = 'poster'
+        img.src = m.poster
+        img.alt = m.title + ' poster'
+
+        const body = document.createElement('div')
+        body.className = 'card-body'
+
+        const h3 = document.createElement('h3')
+        h3.className = 'title'
+        h3.textContent = m.title
+
+        const meta = document.createElement('div')
+        meta.className = 'meta'
+        meta.textContent = m.year + ' • ' + m.runtime + ' мин.'
+
+        const btn = document.createElement('button')
+        btn.className = 'fav-btn' + (favorites[m.id] ? ' fav' : '')
+        btn.innerHTML = favorites[m.id] ? '★ В избранном' : '☆ В избранное'
+        btn.addEventListener('click', () => {
+          if (favorites[m.id]) delete favorites[m.id]; else favorites[m.id] = true
+          saveFavs()
+          render()
+        })
+
+        body.appendChild(h3)
+        body.appendChild(meta)
+        body.appendChild(btn)
+
+        card.appendChild(img)
+        card.appendChild(body)
+        grid.appendChild(card)
+      })
+
+      countEl.textContent = 'Найдено: ' + filtered.length + ' / ' + movies.length
+    }
+
+    searchInput.addEventListener('input', render)
+    onlyFavCheckbox.addEventListener('change', render)
+
+    // initial render
+    render()
+  </script>
+</body>
+</html>
